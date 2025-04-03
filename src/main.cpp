@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <chrono>
 #include "ImageCompressor.h"
 using namespace std;
 
@@ -24,10 +25,21 @@ int main() {
     cout << "Enter output GIF path: ";
     getline(cin, gifPath);
 
-    QuadTreeCompressor compressor(inputPath, minBlockSize, threshold, errorMethod);
+    auto start = chrono::high_resolution_clock::now();
+
+    ImageCompressor compressor(inputPath, minBlockSize, threshold, errorMethod);
     compressor.compress();
     compressor.saveCompressedImage(outputPath);
 
-    cout << "Image compressed successfully.\n";
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::milliseconds>(end - start);
+
+    cout << "Execution time: " << duration.count() << " ms\n";
+    cout << "Original image size: " << compressor.getOriginalSize() << " bytes\n";
+    cout << "Compressed image size: " << compressor.getCompressedSize() << " bytes\n";
+    cout << "Compression percentage: " << compressor.getCompressionPercentage() << endl;
+    cout << "Quadtree depth: " << compressor.getTreeDepth() << endl;
+    cout << "Number of nodes: " << compressor.getNodeCount() << endl;
+
     return 0;
 }
