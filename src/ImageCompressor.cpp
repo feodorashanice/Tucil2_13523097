@@ -8,7 +8,7 @@
 #include <cmath>
 using namespace std;
 
-QuadTreeCompressor::QuadTreeCompressor(const string& inputPath, int minSize, double threshold, int method) {
+ImageCompressor::ImageCompressor(const string& inputPath, int minSize, double threshold, int method){
     minBlockSize = minSize;
     varianceThreshold = threshold;
     errorMethod = method;
@@ -24,12 +24,12 @@ QuadTreeCompressor::QuadTreeCompressor(const string& inputPath, int minSize, dou
     root = new QuadTreeNode(0, 0, imgWidth, imgHeight);
 }
 
-QuadTreeCompressor::~QuadTreeCompressor() {
+ImageCompressor::~ImageCompressor(){
     stbi_image_free(imageData);
     delete root;
 }
 
-RGB QuadTreeCompressor::calculateAverageColor(int x, int y, int w, int h) {
+RGB ImageCompressor::calculateAverageColor(int x, int y, int w, int h){
     long long sumR = 0, sumG = 0, sumB = 0;
     int count = 0;
 
@@ -46,8 +46,7 @@ RGB QuadTreeCompressor::calculateAverageColor(int x, int y, int w, int h) {
     if (count == 0) return RGB(0, 0, 0);
     return RGB(sumR / count, sumG / count, sumB / count);
 }
-
-double QuadTreeCompressor::calculateError(int x, int y, int w, int h) {
+double ImageCompressor::calculateError(int x, int y, int w, int h) {
     int count = 0;
     vector<RGB> pixels;
 
@@ -61,7 +60,7 @@ double QuadTreeCompressor::calculateError(int x, int y, int w, int h) {
 
     if (count == 0) return 0;
 
-    if (errorMethod == 1) { // Variance
+    if (errorMethod == 1) { // variance
         double meanR = 0, meanG = 0, meanB = 0;
         for (const auto& p : pixels) {
             meanR += p.r;
@@ -83,7 +82,7 @@ double QuadTreeCompressor::calculateError(int x, int y, int w, int h) {
         varB /= count;
         return (varR + varG + varB) / 3.0;
     }
-    else if (errorMethod == 2) { // Mean Absolute Deviation (MAD)
+    else if (errorMethod == 2) { // mean absolute deviation (MAD)
         double meanR = 0, meanG = 0, meanB = 0;
         for (const auto& p : pixels) {
             meanR += p.r;
@@ -105,7 +104,7 @@ double QuadTreeCompressor::calculateError(int x, int y, int w, int h) {
         madB /= count;
         return (madR + madG + madB) / 3.0;
     }
-    else if (errorMethod == 3) { // Max Pixel Difference
+    else if (errorMethod == 3) { // max pixel difference
         double maxDiffR = 0, maxDiffG = 0, maxDiffB = 0;
         for (size_t i = 0; i < pixels.size(); i++) {
             for (size_t j = i + 1; j < pixels.size(); j++) {
@@ -116,7 +115,7 @@ double QuadTreeCompressor::calculateError(int x, int y, int w, int h) {
         }
         return (maxDiffR + maxDiffG + maxDiffB) / 3.0;
     }
-    else if (errorMethod == 4) { // Entropy
+    else if (errorMethod == 4) { // entropy
         vector<int> histR(256, 0), histG(256, 0), histB(256, 0);
         for (const auto& p : pixels) {
             histR[p.r]++;
@@ -144,7 +143,7 @@ double QuadTreeCompressor::calculateError(int x, int y, int w, int h) {
     return 0;
 }
 
-void QuadTreeCompressor::buildQuadTree(QuadTreeNode* node) {
+void ImageCompressor::buildQuadTree(QuadTreeNode* node) {
     double error = calculateError(node->x, node->y, node->width, node->height);
 
     bool shouldSplit = error > varianceThreshold &&
@@ -171,7 +170,7 @@ void QuadTreeCompressor::buildQuadTree(QuadTreeNode* node) {
     }
 }
 
-void QuadTreeCompressor::reconstructImage(unsigned char* outputData, QuadTreeNode* node) {
+void ImageCompressor::reconstructImage(unsigned char* outputData, QuadTreeNode* node) {
     if (node->isLeaf) {
         for (int i = node->x; i < node->x + node->height && i < imgHeight; i++) {
             for (int j = node->y; j < node->y + node->width && j < imgWidth; j++) {
@@ -190,13 +189,59 @@ void QuadTreeCompressor::reconstructImage(unsigned char* outputData, QuadTreeNod
     }
 }
 
-void QuadTreeCompressor::compress() {
+void ImageCompressor::compress() {
     buildQuadTree(root);
+    treeDepth = calculateDepth(root);
+    nodeCount = calculateNodeCount(root);
 }
 
-void QuadTreeCompressor::saveCompressedImage(const string& outputPath) {
+void ImageCompressor::saveCompressedImage(const string& outputPath) {
     unsigned char* outputData = new unsigned char[imgWidth * imgHeight * 3];
     reconstructImage(outputData, root);
     stbi_write_png(outputPath.c_str(), imgWidth, imgHeight, 3, outputData, imgWidth * 3);
     delete[] outputData;
+}
+
+int ImageCompressor::calculateDepth(QuadTreeNode* node) {
+    if (node->isLeaf) return 1;
+    int maxChildDepth = 0;
+    for (int i = 0; i < 4; i++) {
+        if (node->child[i]) {
+            int childDepth = calculateDepth(node->child[i]);
+            maxChildDepth = std::max(maxChildDepth, childDepth);
+        }
+    }
+    return 1 + maxChildDepth;
+}
+
+int ImageCompressor::calculateNodeCount(QuadTreeNode* node) {
+    int count = 1;
+    if (!node->isLeaf) {
+        for (int i = 0; i < 4; i++) {
+            if (node->child[i]) {
+                count += calculateNodeCount(node->child[i]);
+            }
+        }
+    }
+    return count;
+}
+
+int ImageCompressor::getOriginalSize() {
+    return imgWidth * imgHeight * 3; // approximate
+}
+
+int ImageCompressor::getCompressedSize() {
+    return nodeCount * (sizeof(int) * 4 + sizeof(RGB)); // approximate
+}
+
+double ImageCompressor::getCompressionPercentage() {
+    return (1.0 - (double)getCompressedSize() / getOriginalSize()) * 100.0;
+}
+
+int ImageCompressor::getTreeDepth() {
+    return treeDepth;
+}
+
+int ImageCompressor::getNodeCount() {
+    return nodeCount;
 }

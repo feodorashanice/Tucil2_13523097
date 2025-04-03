@@ -1,19 +1,19 @@
-#ifndef QUADTREE_COMPRESSOR_H
-#define QUADTREE_COMPRESSOR_H
+#ifndef IMAGECOMPRESSOR_H
+#define IMAGECOMPRESSOR_H
 
 #include <string>
 #include <vector>
 #include "QuadTreeNode.h"
 using namespace std;
 
-class QuadTreeCompressor {
+class ImageCompressor{
 private:
     unsigned char* imageData;
     int imgWidth, imgHeight, channels;
     QuadTreeNode* root;
     int minBlockSize;
     double varianceThreshold;
-    int errorMethod; // variance, MAD, maximum pixel difference, entropy
+    int errorMethod;
     int treeDepth;
     int nodeCount;
 
@@ -21,12 +21,19 @@ private:
     double calculateError(int x, int y, int w, int h);
     void buildQuadTree(QuadTreeNode* node);
     void reconstructImage(unsigned char* outputData, QuadTreeNode* node);
+    int calculateDepth(QuadTreeNode* node);
+    int calculateNodeCount(QuadTreeNode* node);
 
 public:
-    QuadTreeCompressor(const string& inputPath, int minSize, double threshold, int method);
-    ~QuadTreeCompressor();
+    ImageCompressor(const string& inputPath, int minSize, double threshold, int method);
+    ~ImageCompressor();
     void compress();
     void saveCompressedImage(const string& outputPath);
+    int getOriginalSize();
+    int getCompressedSize();
+    double getCompressionPercentage();
+    int getTreeDepth();
+    int getNodeCount();
 };
 
 #endif
