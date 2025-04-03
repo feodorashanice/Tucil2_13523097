@@ -24,10 +24,10 @@ int main() {
     cout << "Enter output GIF path: ";
     getline(cin, gifPath);
 
-    // Create compressor instance and test image loading/saving
     QuadTreeCompressor compressor(inputPath, minBlockSize, threshold, errorMethod);
+    compressor.compress();
     compressor.saveCompressedImage(outputPath);
 
-    cout << "Image loaded and saved successfully (no compression yet).\n";
+    cout << "Image compressed successfully.\n";
     return 0;
 }

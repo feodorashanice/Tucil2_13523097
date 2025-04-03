@@ -1,8 +1,10 @@
-#ifndef IMAGECOMPRESSOR_H
-#define IMAGECOMPRESSOR_H
+#ifndef QUADTREE_COMPRESSOR_H
+#define QUADTREE_COMPRESSOR_H
 
 #include <string>
+#include <vector>
 #include "QuadTreeNode.h"
+using namespace std;
 
 class QuadTreeCompressor {
 private:
@@ -12,11 +14,19 @@ private:
     int minBlockSize;
     double varianceThreshold;
     int errorMethod; // variance, MAD, maximum pixel difference, entropy
+    int treeDepth;
+    int nodeCount;
+
+    RGB calculateAverageColor(int x, int y, int w, int h);
+    double calculateError(int x, int y, int w, int h);
+    void buildQuadTree(QuadTreeNode* node);
+    void reconstructImage(unsigned char* outputData, QuadTreeNode* node);
 
 public:
-    QuadTreeCompressor(const std::string& inputPath, int minSize, double threshold, int method);
+    QuadTreeCompressor(const string& inputPath, int minSize, double threshold, int method);
     ~QuadTreeCompressor();
-    void saveCompressedImage(const std::string& outputPath);
+    void compress();
+    void saveCompressedImage(const string& outputPath);
 };
 
 #endif
