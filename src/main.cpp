@@ -4,6 +4,9 @@
 #include "ImageCompressor.h"
 using namespace std;
 
+#include <sys/stat.h>
+#include <direct.h>
+
 int main() {
     string inputPath, outputPath, gifPath;
     int errorMethod, minBlockSize;

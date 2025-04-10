@@ -34,6 +34,7 @@ public:
     double getCompressionPercentage();
     int getTreeDepth();
     int getNodeCount();
+    void saveFrameWithOutline(int x, int y, int w, int h);
 };
 
 #endif

@@ -8,6 +8,8 @@
 #include <cmath>
 using namespace std;
 
+int frameCount = 0;
+
 ImageCompressor::ImageCompressor(const string& inputPath, int minSize, double threshold, int method){
     minBlockSize = minSize;
     varianceThreshold = threshold;
@@ -152,6 +154,8 @@ void ImageCompressor::buildQuadTree(QuadTreeNode* node) {
                        node->width / 2 >= minBlockSize &&
                        node->height / 2 >= minBlockSize;
 
+    saveFrameWithOutline(node->x, node->y, node->width, node->height);
+
     if (shouldSplit) {
         node->isLeaf = false;
         int newW = node->width / 2;
@@ -244,4 +248,44 @@ int ImageCompressor::getTreeDepth() {
 
 int ImageCompressor::getNodeCount() {
     return nodeCount;
+}
+
+void ImageCompressor::saveFrameWithOutline(int x, int y, int w, int h) {
+    std::vector<unsigned char> copy(imageData, imageData + imgWidth * imgHeight * 3);
+
+    // Gambar garis kotak (warna merah)
+    for (int i = x; i < x + w; ++i) {
+        if (i >= imgWidth) continue;
+        if (y >= 0 && y < imgHeight) {
+            int idx = (y * imgWidth + i) * 3;
+            copy[idx] = 255; 
+            copy[idx+1] = 0; 
+            copy[idx+2] = 0;
+        }
+        if (y + h - 1 < imgHeight) {
+            int idx = ((y + h - 1) * imgWidth + i) * 3;
+            copy[idx] = 255; 
+            copy[idx+1] = 0; 
+            copy[idx+2] = 0;
+        }
+    }
+    for (int j = y; j < y + h; ++j) {
+        if (j >= imgHeight) continue;
+        if (x >= 0 && x < imgWidth) {
+            int idx = (j * imgWidth + x) * 3;
+            copy[idx] = 255; 
+            copy[idx+1] = 0; 
+            copy[idx+2] = 0;
+        }
+        if (x + w - 1 < imgWidth) {
+            int idx = (j * imgWidth + x + w - 1) * 3;
+            copy[idx] = 255; 
+            copy[idx+1] = 0; 
+            copy[idx+2] = 0;
+        }
+    }
+
+    char filename[100];
+    sprintf(filename, "src/frames/frame_%03d.png", frameCount++);
+    stbi_write_png(filename, imgWidth, imgHeight, 3, copy.data(), imgWidth * 3);
 }
