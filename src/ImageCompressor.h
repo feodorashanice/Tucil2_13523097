@@ -20,6 +20,8 @@ private:
 
     RGB calculateAverageColor(int x, int y, int w, int h);
     unsigned char* originalData;
+    unsigned char* workingData;
+
     double calculateError(int x, int y, int w, int h);
     void buildQuadTree(QuadTreeNode* node);
     void reconstructImage(unsigned char* outputData, QuadTreeNode* node);

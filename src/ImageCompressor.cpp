@@ -24,13 +24,22 @@ ImageCompressor::ImageCompressor(const string& inputPath, int minSize, double th
         exit(1);
     }
 
+    originalData = new unsigned char[imgWidth * imgHeight * 3];
+    memcpy(originalData, imageData, imgWidth * imgHeight * 3);
+
+    workingData = new unsigned char[imgWidth * imgHeight * 3];
+    memcpy(workingData, originalData, imgWidth * imgHeight * 3);
+
     root = new QuadTreeNode(0, 0, imgWidth, imgHeight);
 }
 
 ImageCompressor::~ImageCompressor(){
     stbi_image_free(imageData);
+    delete[] originalData;
+    delete[] workingData;
     delete root;
 }
+
 
 RGB ImageCompressor::calculateAverageColor(int x, int y, int w, int h){
     long long sumR = 0, sumG = 0, sumB = 0;
@@ -170,8 +179,17 @@ void ImageCompressor::buildQuadTree(QuadTreeNode* node) {
             buildQuadTree(node->child[i]);
         }
     } else {
-        node->averageColor = calculateAverageColor(node->x, node->y, node->width, node->height);
-    }
+        node->averageColor = calculateAverageColor(node->x, node->y, node->width, node->height);    
+        for (int i = node->x; i < node->x + node->height && i < imgHeight; i++) {
+            for (int j = node->y; j < node->y + node->width && j < imgWidth; j++) {
+                int idx = (i * imgWidth + j) * 3;
+                workingData[idx] = node->averageColor.r;
+                workingData[idx + 1] = node->averageColor.g;
+                workingData[idx + 2] = node->averageColor.b;
+            }
+        }
+        saveFrame();
+    }    
 }
 
 void ImageCompressor::reconstructImage(unsigned char* outputData, QuadTreeNode* node) {
@@ -251,12 +269,11 @@ int ImageCompressor::getNodeCount() {
 }
 
 void ImageCompressor::saveFrame() {
-    std::vector<unsigned char> copy(originalData, originalData + imgWidth * imgHeight * 3);
-
     char filename[100];
     sprintf(filename, "src/frames/frame_%03d.png", frameCount++);
-    stbi_write_png(filename, imgWidth, imgHeight, 3, copy.data(), imgWidth * 3);
+    stbi_write_png(filename, imgWidth, imgHeight, 3, workingData, imgWidth * 3);
 }
+
 
 
 void ImageCompressor::generateGIF(const string& gifOutputPath){
