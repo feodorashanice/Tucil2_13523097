@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <cstdlib>
 #include "QuadTreeNode.h"
 using namespace std;
 
@@ -18,6 +19,7 @@ private:
     int nodeCount;
 
     RGB calculateAverageColor(int x, int y, int w, int h);
+    unsigned char* originalData;
     double calculateError(int x, int y, int w, int h);
     void buildQuadTree(QuadTreeNode* node);
     void reconstructImage(unsigned char* outputData, QuadTreeNode* node);
@@ -34,7 +36,8 @@ public:
     double getCompressionPercentage();
     int getTreeDepth();
     int getNodeCount();
-    void saveFrameWithOutline(int x, int y, int w, int h);
+    void saveFrame();
+    void generateGIF(const string& gifOutputPath);
 };
 
 #endif

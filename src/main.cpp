@@ -4,9 +4,6 @@
 #include "ImageCompressor.h"
 using namespace std;
 
-#include <sys/stat.h>
-#include <direct.h>
-
 int main() {
     string inputPath, outputPath, gifPath;
     int errorMethod, minBlockSize;
@@ -33,6 +30,7 @@ int main() {
     ImageCompressor compressor(inputPath, minBlockSize, threshold, errorMethod);
     compressor.compress();
     compressor.saveCompressedImage(outputPath);
+    compressor.generateGIF(gifPath);
 
     auto end = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::milliseconds>(end - start);

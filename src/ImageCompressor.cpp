@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <cstdlib> 
 using namespace std;
 
 int frameCount = 0;
@@ -154,9 +155,8 @@ void ImageCompressor::buildQuadTree(QuadTreeNode* node) {
                        node->width / 2 >= minBlockSize &&
                        node->height / 2 >= minBlockSize;
 
-    saveFrameWithOutline(node->x, node->y, node->width, node->height);
-
     if (shouldSplit) {
+        saveFrame();
         node->isLeaf = false;
         int newW = node->width / 2;
         int newH = node->height / 2;
@@ -250,42 +250,22 @@ int ImageCompressor::getNodeCount() {
     return nodeCount;
 }
 
-void ImageCompressor::saveFrameWithOutline(int x, int y, int w, int h) {
-    std::vector<unsigned char> copy(imageData, imageData + imgWidth * imgHeight * 3);
-
-    // Gambar garis kotak (warna merah)
-    for (int i = x; i < x + w; ++i) {
-        if (i >= imgWidth) continue;
-        if (y >= 0 && y < imgHeight) {
-            int idx = (y * imgWidth + i) * 3;
-            copy[idx] = 255; 
-            copy[idx+1] = 0; 
-            copy[idx+2] = 0;
-        }
-        if (y + h - 1 < imgHeight) {
-            int idx = ((y + h - 1) * imgWidth + i) * 3;
-            copy[idx] = 255; 
-            copy[idx+1] = 0; 
-            copy[idx+2] = 0;
-        }
-    }
-    for (int j = y; j < y + h; ++j) {
-        if (j >= imgHeight) continue;
-        if (x >= 0 && x < imgWidth) {
-            int idx = (j * imgWidth + x) * 3;
-            copy[idx] = 255; 
-            copy[idx+1] = 0; 
-            copy[idx+2] = 0;
-        }
-        if (x + w - 1 < imgWidth) {
-            int idx = (j * imgWidth + x + w - 1) * 3;
-            copy[idx] = 255; 
-            copy[idx+1] = 0; 
-            copy[idx+2] = 0;
-        }
-    }
+void ImageCompressor::saveFrame() {
+    std::vector<unsigned char> copy(originalData, originalData + imgWidth * imgHeight * 3);
 
     char filename[100];
     sprintf(filename, "src/frames/frame_%03d.png", frameCount++);
     stbi_write_png(filename, imgWidth, imgHeight, 3, copy.data(), imgWidth * 3);
+}
+
+
+void ImageCompressor::generateGIF(const string& gifOutputPath){
+    string command = "convert -delay 10 -loop 0 src/frames/frame_*.png " + gifOutputPath;
+    int result = system(command.c_str());
+
+    if (result != 0) {
+        cerr << "Failed to create GIF." << endl;
+    } else {
+        cout << "GIF saved to: " << gifOutputPath << endl;
+    }
 }
