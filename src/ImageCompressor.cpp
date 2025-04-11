@@ -213,14 +213,25 @@ void ImageCompressor::reconstructImage(unsigned char* outputData, QuadTreeNode* 
 }
 
 void ImageCompressor::adjustThresholdForTarget() {
-    if (targetCompression <= 0 || targetCompression >= 100) {
+    if (targetCompression <= 0.0) {
         return;
     }
 
     double low = 0.0;
     double high = 100000.0;
-    const double tolerance = 1.0;
+    const double tolerance = 0.01;
     const int maxIterations = 50;
+
+    if (targetCompression >= 0.99) {
+        varianceThreshold = 0.0;
+        delete root;
+        root = new QuadTreeNode(0, 0, imgWidth, imgHeight);
+        frameCount = 0;
+        buildQuadTree(root);
+        treeDepth = calculateDepth(root);
+        nodeCount = calculateNodeCount(root);
+        return;
+    }
 
     for (int i = 0; i < maxIterations; i++) {
         delete root;
@@ -231,12 +242,10 @@ void ImageCompressor::adjustThresholdForTarget() {
         treeDepth = calculateDepth(root);
         nodeCount = calculateNodeCount(root);
 
-        double currentCompression = getCompressionPercentage();
+        double currentCompression = getCompressionPercentage() / 100.0;
         if (abs(currentCompression - targetCompression) <= tolerance) {
             break;
         }
-
-        // Adjust the search range
         if (currentCompression < targetCompression) {
             high = varianceThreshold;
         } else {
