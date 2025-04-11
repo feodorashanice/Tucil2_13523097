@@ -80,26 +80,29 @@ double ImageCompressor::calculateError(int x, int y, int w, int h) {
 
     if (count == 0) return 0;
 
-    if (errorMethod == 1) { // variance
+    if (errorMethod == 1) { // variance using Welford's method
         double meanR = 0, meanG = 0, meanB = 0;
-        for (const auto& p : pixels) {
-            meanR += p.r;
-            meanG += p.g;
-            meanB += p.b;
-        }
-        meanR /= count;
-        meanG /= count;
-        meanB /= count;
+        double m2R = 0, m2G = 0, m2B = 0;
 
-        double varR = 0, varG = 0, varB = 0;
-        for (const auto& p : pixels) {
-            varR += pow(p.r - meanR, 2);
-            varG += pow(p.g - meanG, 2);
-            varB += pow(p.b - meanB, 2);
+        for (int i = 0; i < pixels.size(); i++) {
+            double r = pixels[i].r;
+            double g = pixels[i].g;
+            double b = pixels[i].b;
+
+            double deltaR = r - meanR;
+            double deltaG = g - meanG;
+            double deltaB = b - meanB;
+            meanR += deltaR / (i + 1);
+            meanG += deltaG / (i + 1);
+            meanB += deltaB / (i + 1);
+
+            m2R += deltaR * (r - meanR);
+            m2G += deltaG * (g - meanG);
+            m2B += deltaB * (b - meanB);
         }
-        varR /= count;
-        varG /= count;
-        varB /= count;
+        double varR = m2R / count;
+        double varG = m2G / count;
+        double varB = m2B / count;
         return (varR + varG + varB) / 3.0;
     }
     else if (errorMethod == 2) { // mean absolute deviation (MAD)
