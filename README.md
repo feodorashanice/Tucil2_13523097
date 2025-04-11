@@ -50,9 +50,9 @@ Setiap blok akhir (leaf node) akan diisi dengan nilai rata-rata dari intensitas 
 3. Untuk Windows, install via Chocolatey dengan mengetik `choco install imagemagick` pada terminal, atau install manual dari: https://imagemagick.org
 
 ## How to Compile
-Jalankan perintah `g++ src/*.cpp -o bin/quadtree_compress` pada terminal dari root directory.
+Jalankan perintah `g++ src/*.cpp -o bin/quadtree_compression` pada terminal dari root directory.
 
 ## How to Run
-1. Ketik `./bin/quadtree_compress` pada terminal.
+1. Ketik `./bin/quadtree_compression` pada terminal.
 2. Masukkan input berupa path file (contoh: test/test1_64x64.png), metode perhitungan error, threshold, ukuran blok minimum, target persentase kompresi, output file .png, serta output file .gif jika memilih untuk generate gif.
 3. Jika semua masukan valid, program akan memulai kompresi gambar dan generate GIF apabila disetujui pengguna.
