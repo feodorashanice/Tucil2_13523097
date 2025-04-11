@@ -7,7 +7,7 @@
 #include "QuadTreeNode.h"
 using namespace std;
 
-class ImageCompressor{
+class ImageCompressor {
 private:
     unsigned char* imageData;
     int imgWidth, imgHeight, channels;
@@ -17,6 +17,7 @@ private:
     int errorMethod;
     int treeDepth;
     int nodeCount;
+    double targetCompression;
 
     RGB calculateAverageColor(int x, int y, int w, int h);
     unsigned char* originalData;
@@ -27,9 +28,10 @@ private:
     void reconstructImage(unsigned char* outputData, QuadTreeNode* node);
     int calculateDepth(QuadTreeNode* node);
     int calculateNodeCount(QuadTreeNode* node);
+    void adjustThresholdForTarget();
 
 public:
-    ImageCompressor(const string& inputPath, int minSize, double threshold, int method);
+    ImageCompressor(const string& inputPath, int minSize, double threshold, int method, double targetComp);
     ~ImageCompressor();
     void compress();
     void saveCompressedImage(const string& outputPath);

@@ -6,17 +6,18 @@
 
 #include <iostream>
 #include <cmath>
-#include <cstdlib> 
+#include <cstdlib>
 using namespace std;
 
 int frameCount = 0;
 
-ImageCompressor::ImageCompressor(const string& inputPath, int minSize, double threshold, int method){
+ImageCompressor::ImageCompressor(const string& inputPath, int minSize, double threshold, int method, double targetComp) {
     minBlockSize = minSize;
     varianceThreshold = threshold;
     errorMethod = method;
     treeDepth = 0;
     nodeCount = 0;
+    targetCompression = targetComp;
 
     imageData = stbi_load(inputPath.c_str(), &imgWidth, &imgHeight, &channels, 3);
     if (!imageData) {
@@ -33,15 +34,14 @@ ImageCompressor::ImageCompressor(const string& inputPath, int minSize, double th
     root = new QuadTreeNode(0, 0, imgWidth, imgHeight);
 }
 
-ImageCompressor::~ImageCompressor(){
+ImageCompressor::~ImageCompressor() {
     stbi_image_free(imageData);
     delete[] originalData;
     delete[] workingData;
     delete root;
 }
 
-
-RGB ImageCompressor::calculateAverageColor(int x, int y, int w, int h){
+RGB ImageCompressor::calculateAverageColor(int x, int y, int w, int h) {
     long long sumR = 0, sumG = 0, sumB = 0;
     int count = 0;
 
@@ -58,6 +58,7 @@ RGB ImageCompressor::calculateAverageColor(int x, int y, int w, int h){
     if (count == 0) return RGB(0, 0, 0);
     return RGB(sumR / count, sumG / count, sumB / count);
 }
+
 double ImageCompressor::calculateError(int x, int y, int w, int h) {
     int count = 0;
     vector<RGB> pixels;
@@ -179,7 +180,7 @@ void ImageCompressor::buildQuadTree(QuadTreeNode* node) {
             buildQuadTree(node->child[i]);
         }
     } else {
-        node->averageColor = calculateAverageColor(node->x, node->y, node->width, node->height);    
+        node->averageColor = calculateAverageColor(node->x, node->y, node->width, node->height);
         for (int i = node->x; i < node->x + node->height && i < imgHeight; i++) {
             for (int j = node->y; j < node->y + node->width && j < imgWidth; j++) {
                 int idx = (i * imgWidth + j) * 3;
@@ -189,7 +190,7 @@ void ImageCompressor::buildQuadTree(QuadTreeNode* node) {
             }
         }
         saveFrame();
-    }    
+    }
 }
 
 void ImageCompressor::reconstructImage(unsigned char* outputData, QuadTreeNode* node) {
@@ -211,10 +212,44 @@ void ImageCompressor::reconstructImage(unsigned char* outputData, QuadTreeNode* 
     }
 }
 
+void ImageCompressor::adjustThresholdForTarget() {
+    if (targetCompression <= 0 || targetCompression >= 100) {
+        return;
+    }
+
+    double low = 0.0;
+    double high = 100000.0;
+    const double tolerance = 1.0;
+    const int maxIterations = 50;
+
+    for (int i = 0; i < maxIterations; i++) {
+        delete root;
+        root = new QuadTreeNode(0, 0, imgWidth, imgHeight);
+        frameCount = 0;
+        varianceThreshold = (low + high) / 2;
+        buildQuadTree(root);
+        treeDepth = calculateDepth(root);
+        nodeCount = calculateNodeCount(root);
+
+        double currentCompression = getCompressionPercentage();
+        if (abs(currentCompression - targetCompression) <= tolerance) {
+            break;
+        }
+
+        // Adjust the search range
+        if (currentCompression < targetCompression) {
+            high = varianceThreshold;
+        } else {
+            low = varianceThreshold;
+        }
+    }
+}
+
 void ImageCompressor::compress() {
     buildQuadTree(root);
     treeDepth = calculateDepth(root);
     nodeCount = calculateNodeCount(root);
+    adjustThresholdForTarget();
 }
 
 void ImageCompressor::saveCompressedImage(const string& outputPath) {
@@ -274,9 +309,7 @@ void ImageCompressor::saveFrame() {
     stbi_write_png(filename, imgWidth, imgHeight, 3, workingData, imgWidth * 3);
 }
 
-
-
-void ImageCompressor::generateGIF(const string& gifOutputPath){
+void ImageCompressor::generateGIF(const string& gifOutputPath) {
     string command = "convert -delay 10 -loop 0 src/frames/frame_*.png " + gifOutputPath;
     int result = system(command.c_str());
 
