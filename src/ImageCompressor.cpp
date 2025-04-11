@@ -19,6 +19,13 @@ ImageCompressor::ImageCompressor(const string& inputPath, int minSize, double th
     nodeCount = 0;
     targetCompression = targetComp;
 
+    // Create the src/frames/ directory if it doesn't exist
+    #ifdef _WIN32
+        system("mkdir src\\frames >nul 2>&1"); // Windows: Create directory, suppress output
+    #else
+        system("mkdir -p src/frames >/dev/null 2>&1"); // Unix-like: Create directory, suppress output
+    #endif
+
     imageData = stbi_load(inputPath.c_str(), &imgWidth, &imgHeight, &channels, 3);
     if (!imageData) {
         cerr << "Error: Could not load image " << inputPath << endl;
@@ -246,7 +253,7 @@ void ImageCompressor::adjustThresholdForTarget() {
         if (abs(currentCompression - targetCompression) <= tolerance) {
             break;
         }
-        if (currentCompression < targetCompression) {
+        if (currentCompression > targetCompression) {
             high = varianceThreshold;
         } else {
             low = varianceThreshold;
@@ -255,6 +262,16 @@ void ImageCompressor::adjustThresholdForTarget() {
 }
 
 void ImageCompressor::compress() {
+    // Clear the src/frames/ directory before starting a new compression
+    #ifdef _WIN32
+        system("del /Q src\\frames\\frame_*.png >nul 2>&1"); // Windows: Delete all frame_*.png files
+    #else
+        system("rm -f src/frames/frame_*.png >/dev/null 2>&1"); // Unix-like: Delete all frame_*.png files
+    #endif
+
+    // Reset frameCount to 0 for a fresh start
+    frameCount = 0;
+
     buildQuadTree(root);
     treeDepth = calculateDepth(root);
     nodeCount = calculateNodeCount(root);
