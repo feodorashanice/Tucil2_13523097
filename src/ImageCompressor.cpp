@@ -11,20 +11,22 @@ using namespace std;
 
 int frameCount = 0;
 
-ImageCompressor::ImageCompressor(const string& inputPath, int minSize, double threshold, int method, double targetComp) {
+ImageCompressor::ImageCompressor(const string& inputPath, int minSize, double threshold, int method, double targetComp, bool genGif) {
     minBlockSize = minSize;
     varianceThreshold = threshold;
     errorMethod = method;
     treeDepth = 0;
     nodeCount = 0;
     targetCompression = targetComp;
+    generateGif = genGif;
 
-    // Create the src/frames/ directory if it doesn't exist
-    #ifdef _WIN32
-        system("mkdir src\\frames >nul 2>&1"); // Windows: Create directory, suppress output
-    #else
-        system("mkdir -p src/frames >/dev/null 2>&1"); // Unix-like: Create directory, suppress output
-    #endif
+    if (generateGif) {
+        #ifdef _WIN32
+            system("mkdir src\\frames >nul 2>&1");
+        #else
+            system("mkdir -p src/frames >/dev/null 2>&1");
+        #endif
+    }
 
     imageData = stbi_load(inputPath.c_str(), &imgWidth, &imgHeight, &channels, 3);
     if (!imageData) {
@@ -176,15 +178,15 @@ void ImageCompressor::buildQuadTree(QuadTreeNode* node) {
                        node->height / 2 >= minBlockSize;
 
     if (shouldSplit) {
-        saveFrame();
+        if (generateGif) saveFrame();
         node->isLeaf = false;
         int newW = node->width / 2;
         int newH = node->height / 2;
 
-        node->child[0] = new QuadTreeNode(node->x, node->y, newW, newH); // NW
-        node->child[1] = new QuadTreeNode(node->x, node->y + newW, newW, newH); // NE
-        node->child[2] = new QuadTreeNode(node->x + newH, node->y, newW, newH); // SW
-        node->child[3] = new QuadTreeNode(node->x + newH, node->y + newW, newW, newH); // SE
+        node->child[0] = new QuadTreeNode(node->x, node->y, newW, newH);
+        node->child[1] = new QuadTreeNode(node->x, node->y + newW, newW, newH);
+        node->child[2] = new QuadTreeNode(node->x + newH, node->y, newW, newH);
+        node->child[3] = new QuadTreeNode(node->x + newH, node->y + newW, newW, newH);
 
         for (int i = 0; i < 4; i++) {
             buildQuadTree(node->child[i]);
@@ -199,7 +201,7 @@ void ImageCompressor::buildQuadTree(QuadTreeNode* node) {
                 workingData[idx + 2] = node->averageColor.b;
             }
         }
-        saveFrame();
+        if (generateGif) saveFrame();
     }
 }
 
@@ -265,14 +267,13 @@ void ImageCompressor::adjustThresholdForTarget() {
 }
 
 void ImageCompressor::compress() {
-    // Clear the src/frames/ directory before starting a new compression
-    #ifdef _WIN32
-        system("del /Q src\\frames\\frame_*.png >nul 2>&1"); // Windows: Delete all frame_*.png files
-    #else
-        system("rm -f src/frames/frame_*.png >/dev/null 2>&1"); // Unix-like: Delete all frame_*.png files
-    #endif
-
-    // Reset frameCount to 0 for a fresh start
+    if (generateGif) {
+        #ifdef _WIN32
+            system("del /Q src\\frames\\frame_*.png >nul 2>&1");
+        #else
+            system("rm -f src/frames/frame_*.png >/dev/null 2>&1");
+        #endif
+    }
     frameCount = 0;
 
     buildQuadTree(root);
@@ -339,6 +340,11 @@ void ImageCompressor::saveFrame() {
 }
 
 void ImageCompressor::generateGIF(const string& gifOutputPath) {
+    if (!generateGif) {
+        cout << "Skipping GIF generation..." << endl;
+        return;
+    }
+
     string command = "convert -delay 10 -loop 0 src/frames/frame_*.png " + gifOutputPath;
     int result = system(command.c_str());
 

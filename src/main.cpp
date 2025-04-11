@@ -1,3 +1,4 @@
+// main.cpp
 #include <iostream>
 #include <string>
 #include <chrono>
@@ -8,7 +9,8 @@ int main() {
     string inputPath, outputPath, gifPath;
     int errorMethod, minBlockSize;
     double threshold, targetCompression;
-    char continueChoice;
+    char continueChoice, generateGifChoice;
+    bool generateGif;
 
     cout << "ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ" << endl;
     cout << "█▀▀█ █░░█ █▀▀█ █▀▀▄ ▀▀█▀▀ █▀▀█ █▀▀ █▀▀ \t █▀▀ █▀▀█ █▀▄▀█ █▀▀█ █▀▀█ █▀▀ █▀▀ █▀▀ ░▀░ █▀▀█ █▀▀▄\n";
@@ -39,16 +41,26 @@ int main() {
         cin >> minBlockSize;
         cout << "Enter target compression percentage (0 to disable): ";
         cin >> targetCompression;
+        cout << "Do you want to generate a GIF? (y/n): ";
+        cin >> generateGifChoice;
+        generateGif = (generateGifChoice == 'y' || generateGifChoice == 'Y');
         cin.ignore();
+
         cout << "Enter output image path: ";
         getline(cin, outputPath);
-        cout << "Enter output GIF path: ";
-        getline(cin, gifPath);
+
+        if (generateGif) {
+            cout << "Enter output GIF path: ";
+            getline(cin, gifPath);
+        } else {
+            gifPath = "";
+        }
+
         cout << "Compressing image..." << endl;
 
         auto start = chrono::high_resolution_clock::now();
 
-        ImageCompressor compressor(inputPath, minBlockSize, threshold, errorMethod, targetCompression);
+        ImageCompressor compressor(inputPath, minBlockSize, threshold, errorMethod, targetCompression, generateGif);
         compressor.compress();
         compressor.saveCompressedImage(outputPath);
         compressor.generateGIF(gifPath);
