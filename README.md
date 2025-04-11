@@ -15,6 +15,7 @@ Setiap blok akhir (leaf node) akan diisi dengan nilai rata-rata dari intensitas 
 
 ## Author
 |   NIM    |              Nama               |
+| :------: | :------------------------------------: |
 | 13523097 |    Shanice Feodora Tjahjono     |
 
 ## Project Structure
